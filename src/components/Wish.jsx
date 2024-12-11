@@ -1,55 +1,74 @@
 import React, { useState } from 'react';
 
-const Wish = ({ wish, onAddComment, onComplete, currentUser }) => {
+const Wish = ({ wish, onAddComment, onComplete, currentUser, onDeleteComment, onDeleteWish }) => {
     const [comment, setComment] = useState('');
     const [media, setMedia] = useState(null);
 
     const handleAddComment = () => {
-        onAddComment({
-            text: comment,
-            media: media,
-            user: currentUser.username,
-            timestamp: new Date().toISOString()
-        });
-        setComment('');
-        setMedia(null);
+        if (comment.trim()) {
+            const newComment = {
+                id: Date.now(),
+                text: comment,
+                user: currentUser.username,
+                timestamp: new Date().toISOString()
+            };
+            onAddComment(wish.id, newComment);
+            setComment('');
+            setMedia(null);
+        }
     };
 
     return (
         <div className="wish-card">
-            <h3>{wish.title}</h3>
-            <p>{wish.description}</p>
+            <div className="wish-header">
+                <h3>{wish.title}</h3>
+                {currentUser.role === "wisher" && (
+                    <button
+                        className="delete-wish-button"
+                        onClick={() => onDeleteWish(wish.id)}
+                    >
+                        Delete Wish
+                    </button>
+                )}
+            </div>
+
+            <p className="wish-description">{wish.description}</p>
 
             <div className="comments-section">
-                {wish.comments.map((comment, index) => (
-                    <div key={index} className="comment">
-                        <p>{comment.text}</p>
-                        {comment.media && (
-                            <div className="media-content">
-                                {/* Display image/video based on type */}
+                {wish.comments && wish.comments.map((comment) => (
+                    <div key={comment.id} className="comment">
+                        <div className="comment-content">
+                            <div className="comment-header">
+                                <strong className="comment-author">{comment.user}</strong>
+                                <span className="comment-time">
+                  {new Date(comment.timestamp).toLocaleString()}
+                </span>
                             </div>
-                        )}
+                            <div className="comment-body">
+                                {comment.text}
+                            </div>
+                            {(currentUser.role === "wisher" || currentUser.username === comment.user) && (
+                                <button
+                                    className="delete-button"
+                                    onClick={() => onDeleteComment(wish.id, comment.id)}
+                                >
+                                    Delete
+                                </button>
+                            )}
+                        </div>
                     </div>
                 ))}
             </div>
 
-            {currentUser.role === "fulfiller" && !wish.completed && (
-                <div className="action-section">
-                    <input
-                        type="text"
-                        value={comment}
-                        onChange={(e) => setComment(e.target.value)}
-                        placeholder="Add a comment..."
-                    />
-                    <input
-                        type="file"
-                        onChange={(e) => setMedia(e.target.files[0])}
-                        accept="image/*,video/*"
-                    />
-                    <button onClick={handleAddComment}>Add Comment</button>
-                    <button onClick={() => onComplete(wish.id)}>Mark as Completed</button>
-                </div>
-            )}
+            <div className="add-comment-section">
+                <input
+                    type="text"
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                    placeholder="Add a comment..."
+                />
+                <button onClick={handleAddComment}>Add Comment</button>
+            </div>
         </div>
     );
 };
